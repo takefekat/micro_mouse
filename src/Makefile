@@ -2,37 +2,38 @@ CC = rx-elf-gcc
 CP = rx-elf-g++
 LINKER = ./generate/linker_script.ld
 
-SRCS := $(wildcard ./src/*.cpp) $(wildcard ./generate/*.c) $(wildcard ./generate/*.S)
-OBJS := $(SRCS:.cpp=.o)
+SRCS := $(wildcard ./src/*.cpp) $(wildcard ./src/*/*.cpp) $(wildcard ./src/*/*/*.cpp) $(wildcard ./generate/*.c) $(wildcard ./generate/*.S)
+OBJS := $(addprefix obj/,$(notdir $(SRCS:.cpp=.o)))
 OBJS := $(OBJS:.c=.o)
 OBJS := $(OBJS:.S=.o)
 
-all: gcc_rx_project.elf gcc_rx_project.mot gcc_rx_project.siz
+VPATH = ./src:./src/*:./src/*/*:./generate
 
-gcc_rx_project.elf: $(OBJS)
-	$(CP) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -o "gcc_rx_project.elf" $(OBJS) $(USER_OBJS) $(LIBS) -T $(LINKER) -Wl,--start-group -lm -lc -lgcc -lstdc++ -Wl,--end-group -nostartfiles -Wl,-e_PowerON_Reset -Wl,-M=gcc_rx_project.map
+all: obj/micro_mouse.elf obj/micro_mouse.mot obj/micro_mouse.siz
 
-gcc_rx_project.mot: gcc_rx_project.elf
-	rx-elf-objcopy "gcc_rx_project.elf" -O srec -I elf32-rx-be-ns  "gcc_rx_project.mot"
+obj/micro_mouse.elf: $(OBJS)
+	$(CP) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -o "obj/micro_mouse.elf" $(OBJS) $(USER_OBJS) $(LIBS) -T $(LINKER) -Wl,--start-group -lm -lc -lgcc -lstdc++ -Wl,--end-group -nostartfiles -Wl,-e_PowerON_Reset -Wl,-M=obj/micro_mouse.map
 
-gcc_rx_project.siz: gcc_rx_project.elf
-	rx-elf-size --format=berkeley "gcc_rx_project.elf"
+obj/micro_mouse.mot: obj/micro_mouse.elf
+	rx-elf-objcopy "obj/micro_mouse.elf" -O srec -I elf32-rx-be-ns  "obj/micro_mouse.mot"
 
-%.o: %.cpp
-	$(CP) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -I./generate -DCPPAPP -Wa,-adlnh="gcc_rx_project.lst" -MMD -MP -MF"$*.d" -MT"$*.o"  -c "$<" -o "$@"
+obj/micro_mouse.siz: obj/micro_mouse.elf
+	rx-elf-size --format=berkeley "obj/micro_mouse.elf"
 
-%.o: %.c
-	$(CC) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -I./generate -Wa,-adlnh="hwinit.lst" -MMD -MP -MF"$*.d" -MT"$*.o" "$<" -c -o "$@"
+obj/%.o: %.cpp
+	$(CP) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -I./generate -DCPPAPP -Wa,-adlnh="obj/micro_mouse.lst" -MMD -MP -MF"obj/$*.d" -MT"obj/$*.o"  -c "$<" -o "$@"
 
-%.o: %.S
-	$(CC) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -x assembler-with-cpp -Wa,--gdwarf2 -DCPPAPP -I./src -Wa,-adlhn="start.lst" -MMD -MP -MF"$*.d" -MT"$*.o" -c "$<" -o "$@"
+obj/%.o: %.c
+	$(CC) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -I./generate -Wa,-adlnh="obj/hwinit.lst" -MMD -MP -MF"obj/$*.d" -MT"obj/$*.o" "$<" -c -o "$@"
+
+obj/%.o: %.S
+	$(CC) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -x assembler-with-cpp -Wa,--gdwarf2 -DCPPAPP -I./src -Wa,-adlhn="obj/start.lst" -MMD -MP -MF"obj/$*.d" -MT"obj/$*.o" -c "$<" -o "$@"
 
 .PHONY: clean
 clean:
-	-rm generate/*.d src/*.d
-	-rm generate/*.o src/*.o
-	-rm ./*.lst
-	-rm gcc_rx_project.elf
-	-rm gcc_rx_project.lst
-	-rm gcc_rx_project.map
-	-rm gcc_rx_project.mot
+	-rm obj/*.d
+	-rm obj/*.o
+	-rm obj/*.lst
+	-rm obj/micro_mouse.elf
+	-rm obj/micro_mouse.map
+	-rm obj/micro_mouse.mot
