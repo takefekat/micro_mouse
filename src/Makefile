@@ -1,13 +1,13 @@
 CC = rx-elf-gcc
 CP = rx-elf-g++
-LINKER = ./generate/linker_script.ld
+LINKER = ./BSW/linker_script.ld
 
-SRCS := $(wildcard ./src/*.cpp) $(wildcard ./src/*/*.cpp) $(wildcard ./src/*/*/*.cpp) $(wildcard ./generate/*.c) $(wildcard ./generate/*.S)
+SRCS := $(wildcard ./src/*.cpp) $(wildcard ./src/*/*.cpp) $(wildcard ./src/*/*/*.cpp) $(wildcard ./BSW/*.c) $(wildcard ./BSW/*.S) $(wildcard ./*.cpp)
 OBJS := $(addprefix obj/,$(notdir $(SRCS:.cpp=.o)))
 OBJS := $(OBJS:.c=.o)
 OBJS := $(OBJS:.S=.o)
 
-VPATH = ./src:./src/*:./src/*/*:./generate
+VPATH = ./:./src:./src/*:./src/*/*:./BSW
 
 all: obj/micro_mouse.elf obj/micro_mouse.mot obj/micro_mouse.siz
 
@@ -21,13 +21,13 @@ obj/micro_mouse.siz: obj/micro_mouse.elf
 	rx-elf-size --format=berkeley "obj/micro_mouse.elf"
 
 obj/%.o: %.cpp
-	$(CP) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -I./generate -DCPPAPP -Wa,-adlnh="obj/micro_mouse.lst" -MMD -MP -MF"obj/$*.d" -MT"obj/$*.o"  -c "$<" -o "$@"
+	$(CP) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -I./BSW -DCPPAPP -Wa,-adlnh="obj/micro_mouse.lst" -MMD -MP -MF"obj/$*.d" -MT"obj/$*.o"  -c "$<" -o "$@"
 
 obj/%.o: %.c
-	$(CC) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -I./generate -Wa,-adlnh="obj/hwinit.lst" -MMD -MP -MF"obj/$*.d" -MT"obj/$*.o" "$<" -c -o "$@"
+	$(CC) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -I./BSW -Wa,-adlnh="obj/hwinit.lst" -MMD -MP -MF"obj/$*.d" -MT"obj/$*.o" "$<" -c -o "$@"
 
 obj/%.o: %.S
-	$(CC) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -x assembler-with-cpp -Wa,--gdwarf2 -DCPPAPP -I./src -Wa,-adlhn="obj/start.lst" -MMD -MP -MF"obj/$*.d" -MT"obj/$*.o" -c "$<" -o "$@"
+	$(CC) -O0 -ffunction-sections -fdata-sections -fdiagnostics-parseable-fixits -Wstack-usage=100 -g2 -mcpu=rx600 -misa=v1 -mlittle-endian-data -x assembler-with-cpp -Wa,--gdwarf2 -DCPPAPP -I./BSW -Wa,-adlhn="obj/start.lst" -MMD -MP -MF"obj/$*.d" -MT"obj/$*.o" -c "$<" -o "$@"
 
 .PHONY: clean
 clean:
